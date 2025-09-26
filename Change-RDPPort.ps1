@@ -161,9 +161,9 @@ function Show-CurrentConfig {
     Write-RDPPortLog "RDP Service Start Type: $($config.ServiceStartType)" "INFO"
     
     Write-RDPPortLog "`nWindows Firewall Profiles:" "INFO"
-    foreach ($profile in $config.FirewallProfiles) {
-        $status = if ($profile.Enabled) { "Enabled" } else { "Disabled" }
-        Write-RDPPortLog "  $($profile.Name): $status" "INFO"
+    foreach ($firewallProfile in $config.FirewallProfiles) {
+        $status = if ($firewallProfile.Enabled) { "Enabled" } else { "Disabled" }
+        Write-RDPPortLog "  $($firewallProfile.Name): $status" "INFO"
     }
     
     Write-RDPPortLog "`nActive RDP Firewall Rules:" "INFO"
