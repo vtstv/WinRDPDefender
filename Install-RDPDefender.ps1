@@ -86,6 +86,7 @@ function Copy-ScriptFiles {
         "RDPDefender.ps1",
         "RDPMonitor.ps1", 
         "CleanupTasks.ps1",
+        "Change-RDPPort.ps1",
         "Uninstall-RDPDefender.ps1",
         "Quick-Uninstall.ps1",
         "README.md",
@@ -208,8 +209,15 @@ function New-DesktopShortcuts {
         $shell = New-Object -ComObject WScript.Shell
         $desktopPath = [Environment]::GetFolderPath("Desktop")
         
+        # Create RDP Defender folder on desktop
+        $rdpDefenderFolderPath = Join-Path $desktopPath "RDP Defender"
+        if (-not (Test-Path $rdpDefenderFolderPath)) {
+            New-Item -ItemType Directory -Path $rdpDefenderFolderPath -Force | Out-Null
+            Write-InstallLog "Created desktop folder: RDP Defender" "SUCCESS"
+        }
+        
         # RDP Defender - Show Stats shortcut
-        $statsShortcutPath = Join-Path $desktopPath "RDP Defender - Show Stats.lnk"
+        $statsShortcutPath = Join-Path $rdpDefenderFolderPath "Show Stats.lnk"
         $statsShortcut = $shell.CreateShortcut($statsShortcutPath)
         $statsShortcut.TargetPath = "PowerShell.exe"
         $statsShortcut.Arguments = "-NoProfile -ExecutionPolicy Bypass -Command `"& '$InstallPath\RDPMonitor.ps1' -ShowStats; Read-Host 'Press Enter to close'`""
@@ -218,10 +226,10 @@ function New-DesktopShortcuts {
         $statsShortcut.IconLocation = "PowerShell.exe,0"
         $statsShortcut.WindowStyle = 1
         $statsShortcut.Save()
-        Write-InstallLog "Created desktop shortcut: RDP Defender - Show Stats" "SUCCESS"
+        Write-InstallLog "Created desktop shortcut: Show Stats" "SUCCESS"
         
-        # RDP Defender - Generate Report shortcut
-        $reportShortcutPath = Join-Path $desktopPath "RDP Defender - Generate Report.lnk"
+        # Generate Report shortcut
+        $reportShortcutPath = Join-Path $rdpDefenderFolderPath "Generate Report.lnk"
         $reportShortcut = $shell.CreateShortcut($reportShortcutPath)
         $reportShortcut.TargetPath = "PowerShell.exe"
         $reportShortcut.Arguments = "-NoProfile -ExecutionPolicy Bypass -Command `"& '$InstallPath\RDPMonitor.ps1' -GenerateReport -DaysBack 7; Read-Host 'Press Enter to close'`""
@@ -230,10 +238,10 @@ function New-DesktopShortcuts {
         $reportShortcut.IconLocation = "PowerShell.exe,0"
         $reportShortcut.WindowStyle = 1
         $reportShortcut.Save()
-        Write-InstallLog "Created desktop shortcut: RDP Defender - Generate Report" "SUCCESS"
+        Write-InstallLog "Created desktop shortcut: Generate Report" "SUCCESS"
         
-        # RDP Defender - Quick Status shortcut
-        $quickShortcutPath = Join-Path $desktopPath "RDP Defender - Quick Status.lnk"
+        # Quick Status shortcut
+        $quickShortcutPath = Join-Path $rdpDefenderFolderPath "Quick Status.lnk"
         $quickShortcut = $shell.CreateShortcut($quickShortcutPath)
         $quickShortcut.TargetPath = "PowerShell.exe"
         $quickShortcut.Arguments = "-NoProfile -ExecutionPolicy Bypass -Command `"& '$InstallPath\RDPMonitor.ps1' -ShowStats -DaysBack 1; Write-Host ''; Write-Host 'Active Firewall Rules:' -ForegroundColor Yellow; Get-NetFirewallRule -DisplayName 'RDPDefender_Block_*' | Measure-Object | ForEach-Object { Write-Host `$_.Count -ForegroundColor Green }; Read-Host 'Press Enter to close'`""
@@ -248,18 +256,41 @@ function New-DesktopShortcuts {
         $consoleShortcutPath = Join-Path $desktopPath "RDP Defender - Management Console.lnk"
         $consoleShortcut = $shell.CreateShortcut($consoleShortcutPath)
         $consoleShortcut.TargetPath = "PowerShell.exe"
-        $consoleShortcut.Arguments = "-NoProfile -ExecutionPolicy Bypass -Command `"Set-Location '$InstallPath'; Write-Host 'RDP Defender Management Console' -ForegroundColor Cyan; Write-Host '=================================' -ForegroundColor Cyan; Write-Host ''; Write-Host 'Available Commands:' -ForegroundColor Yellow; Write-Host '  .\RDPDefender.ps1 -TestMode     - Test protection system'; Write-Host '  .\RDPMonitor.ps1 -ShowStats     - View statistics'; Write-Host '  .\RDPMonitor.ps1 -GenerateReport - Generate HTML report'; Write-Host '  .\CleanupTasks.ps1 -DryRun      - Preview cleanup actions'; Write-Host '  Get-NetFirewallRule -DisplayName RDPDefender_Block_* - List blocked IPs'; Write-Host ''; Write-Host 'Current Location: $InstallPath' -ForegroundColor Green`""
+        $consoleShortcut.Arguments = "-NoProfile -ExecutionPolicy Bypass -Command `"" + `
+            "Set-Location '$InstallPath'; " + `
+            "Write-Host 'RDP Defender Management Console' -ForegroundColor Cyan; " + `
+            "Write-Host '=================================' -ForegroundColor Cyan; " + `
+            "Write-Host ''; Write-Host 'Available Commands:' -ForegroundColor Yellow; " + `
+            "Write-Host '  .\RDPDefender.ps1 -TestMode     - Test protection system'; " + `
+            "Write-Host '  .\RDPMonitor.ps1 -ShowStats     - View statistics'; " + `
+            "Write-Host '  .\RDPMonitor.ps1 -GenerateReport - Generate HTML report'; " + `
+            "Write-Host '  .\CleanupTasks.ps1 -DryRun      - Preview cleanup actions'; " + `
+            "Write-Host '  .\Change-RDPPort.ps1            - Interactive RDP port configuration'; " + `
+            "Write-Host '  Get-NetFirewallRule -DisplayName RDPDefender_Block_* - List blocked IPs'; " + `
+            "Write-Host ''; Write-Host 'Current Location: $InstallPath' -ForegroundColor Green`""
         $consoleShortcut.WorkingDirectory = $InstallPath
         $consoleShortcut.Description = "Open PowerShell console in RDP Defender directory with command help"
         $consoleShortcut.IconLocation = "PowerShell.exe,0"
         $consoleShortcut.WindowStyle = 1
         $consoleShortcut.Save()
-        Write-InstallLog "Created desktop shortcut: RDP Defender - Management Console" "SUCCESS"
+        Write-InstallLog "Created desktop shortcut: Management Console" "SUCCESS"
+        
+        # Change RDP Port shortcut
+        $portShortcutPath = Join-Path $rdpDefenderFolderPath "Change RDP Port.lnk"
+        $portShortcut = $shell.CreateShortcut($portShortcutPath)
+        $portShortcut.TargetPath = "PowerShell.exe"
+        $portShortcut.Arguments = "-NoProfile -ExecutionPolicy Bypass -File `"$InstallPath\Change-RDPPort.ps1`""
+        $portShortcut.WorkingDirectory = $InstallPath
+        $portShortcut.Description = "Change RDP port and update firewall rules securely"
+        $portShortcut.IconLocation = "netcfg.dll,0"
+        $portShortcut.WindowStyle = 1
+        $portShortcut.Save()
+        Write-InstallLog "Created desktop shortcut: Change RDP Port" "SUCCESS"
         
         # Release COM object
         [System.Runtime.Interopservices.Marshal]::ReleaseComObject($shell) | Out-Null
         
-        Write-InstallLog "Created 4 desktop shortcuts" "SUCCESS"
+        Write-InstallLog "Created 5 desktop shortcuts" "SUCCESS"
         return $true
     } catch {
         Write-InstallLog "Failed to create desktop shortcuts: $($_.Exception.Message)" "WARNING"

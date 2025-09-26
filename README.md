@@ -76,11 +76,12 @@ RDP Defender is a comprehensive PowerShell-based security solution designed to p
 ```
 
 ### Desktop Shortcuts (Automatic)
-After installation, you'll find these convenient shortcuts on your desktop:
-- **RDP Defender - Show Stats**: View current attack statistics
-- **RDP Defender - Generate Report**: Create comprehensive HTML security report
-- **RDP Defender - Quick Status**: Fast overview of recent attacks and active blocks
-- **RDP Defender - Management Console**: PowerShell console with built-in help commands
+After installation, you'll find a **"RDP Defender"** folder on your desktop containing these convenient shortcuts:
+- **Show Stats**: View current attack statistics  
+- **Generate Report**: Create comprehensive HTML security report
+- **Quick Status**: Fast overview of recent attacks and active blocks
+- **Management Console**: PowerShell console with built-in help commands
+- **Change RDP Port**: Interactive RDP port configuration tool
 
 ### Installation Verification
 After installation, verify the setup:
@@ -216,6 +217,27 @@ Edit the configuration file at `C:\WinRDPDefender\config.json`:
 .\CleanupTasks.ps1 -CleanupDays 60 -MaxLogSizeMB 200
 ```
 
+### RDP Port Security
+```powershell
+# Interactive mode - prompts for port selection (3390 or custom)
+.\Change-RDPPort.ps1
+
+# Change to specific port with confirmation prompt
+.\Change-RDPPort.ps1 -NewPort 5555
+
+# Change to specific port silently (no prompts)
+.\Change-RDPPort.ps1 -NewPort 5555 -Force
+
+# Check current RDP configuration
+.\Change-RDPPort.ps1 -CheckOnly
+
+# Restore to default port (3389) with confirmation
+.\Change-RDPPort.ps1 -RestoreDefault
+
+# Show help and usage examples
+.\Change-RDPPort.ps1 -Help
+```
+
 ## File Structure
 
 ```
@@ -223,6 +245,7 @@ C:\WinRDPDefender\
 ├── RDPDefender.ps1            # Main protection script
 ├── RDPMonitor.ps1             # Attack monitoring and reporting
 ├── CleanupTasks.ps1           # Maintenance and cleanup
+├── Change-RDPPort.ps1         # Secure RDP port configuration
 ├── config.json                # Configuration file
 ├── Install-RDPDefender.ps1    # Installation script
 ├── Uninstall-RDPDefender.ps1  # Complete uninstaller with options

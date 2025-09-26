@@ -26,14 +26,32 @@ $removedCount = 0
 # Remove desktop shortcuts
 Write-Host "Removing desktop shortcuts..." -ForegroundColor Yellow
 $desktopPath = [Environment]::GetFolderPath("Desktop")
-$shortcuts = @(
+$rdpDefenderFolderPath = Join-Path $desktopPath "RDP Defender"
+
+# Remove RDP Defender folder and all shortcuts inside
+if (Test-Path $rdpDefenderFolderPath) {
+    try {
+        $shortcuts = Get-ChildItem $rdpDefenderFolderPath -Filter "*.lnk" -ErrorAction SilentlyContinue
+        $shortcutCount = $shortcuts.Count
+        Remove-Item $rdpDefenderFolderPath -Recurse -Force -ErrorAction Stop
+        Write-Host "Removed RDP Defender folder with $shortcutCount shortcuts" -ForegroundColor Green
+    } catch {
+        Write-Host "Failed to remove RDP Defender folder: $($_.Exception.Message)" -ForegroundColor Red
+    }
+} else {
+    Write-Host "RDP Defender folder not found on desktop" -ForegroundColor Yellow
+}
+
+# Legacy cleanup - remove old individual shortcuts if they exist
+$legacyShortcuts = @(
     "RDP Defender - Show Stats.lnk",
     "RDP Defender - Generate Report.lnk", 
     "RDP Defender - Quick Status.lnk",
-    "RDP Defender - Management Console.lnk"
+    "RDP Defender - Management Console.lnk",
+    "RDP Defender - Change Port.lnk"
 )
 
-foreach ($shortcut in $shortcuts) {
+foreach ($shortcut in $legacyShortcuts) {
     $shortcutPath = Join-Path $desktopPath $shortcut
     if (Test-Path $shortcutPath) {
         try {

@@ -26,11 +26,12 @@ cd "D:\Dev\WinRDPDefender"
 ```
 
 ### Step 2: Using Desktop Shortcuts (Quickest Method)
-After installation, simply double-click the desktop shortcuts:
-- **RDP Defender - Show Stats**: Instantly view current security statistics
-- **RDP Defender - Generate Report**: Create and open comprehensive HTML report
-- **RDP Defender - Quick Status**: Fast check of recent attacks and active blocks
-- **RDP Defender - Management Console**: Access PowerShell with helpful commands
+After installation, open the **RDP Defender** folder on your desktop and double-click shortcuts:
+- **Show Stats**: Instantly view current security statistics
+- **Generate Report**: Create and open comprehensive HTML report
+- **Quick Status**: Fast check of recent attacks and active blocks
+- **Management Console**: Access PowerShell with helpful commands
+- **Change RDP Port**: Interactive RDP port configuration tool
 
 ### Step 3: Test the System
 ```powershell
@@ -135,6 +136,38 @@ After installation, simply double-click the desktop shortcuts:
 
 # Aggressive cleanup for disk space
 .\CleanupTasks.ps1 -CleanupDays 7 -MaxLogSizeMB 50
+```
+
+### RDP Port Security Configuration
+```powershell
+# Interactive mode - Shows menu to choose 3390 or custom port
+.\Change-RDPPort.ps1
+
+# Check current RDP port configuration
+.\Change-RDPPort.ps1 -CheckOnly
+
+# Change to specific port with confirmation prompt
+.\Change-RDPPort.ps1 -NewPort 5555
+
+# Change to specific port silently (no prompts)
+.\Change-RDPPort.ps1 -NewPort 5555 -Force
+
+# Restore to default port 3389 with confirmation
+.\Change-RDPPort.ps1 -RestoreDefault
+
+# Restore to default port 3389 silently
+.\Change-RDPPort.ps1 -RestoreDefault -Force
+
+# Show detailed help and usage
+.\Change-RDPPort.ps1 -Help
+
+# Security-focused examples with interactive selection
+.\Change-RDPPort.ps1                   # Choose from menu: 3390 or custom
+.\Change-RDPPort.ps1 -NewPort 49152    # Use high port number with confirmation
+.\Change-RDPPort.ps1 -NewPort 22222 -Force  # Use custom port without prompts
+
+# Test mode - see what would be changed without making changes
+.\Change-RDPPort.ps1 -NewPort 8888 -TestMode
 ```
 
 ## Troubleshooting Commands

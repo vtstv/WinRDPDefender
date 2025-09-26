@@ -217,15 +217,42 @@ function Remove-DesktopShortcuts {
     Write-UninstallLog "Removing desktop shortcuts..." "INFO"
     
     $desktopPath = [Environment]::GetFolderPath("Desktop")
-    $shortcuts = @(
+    $rdpDefenderFolderPath = Join-Path $desktopPath "RDP Defender"
+    
+    if (Test-Path $rdpDefenderFolderPath) {
+        if ($DryRun) {
+            Write-UninstallLog "[DRY RUN] Would remove RDP Defender folder and all shortcuts: $rdpDefenderFolderPath" "INFO"
+            $shortcuts = Get-ChildItem $rdpDefenderFolderPath -Filter "*.lnk" -ErrorAction SilentlyContinue
+            foreach ($shortcut in $shortcuts) {
+                Write-UninstallLog "[DRY RUN] Would remove shortcut: $($shortcut.Name)" "INFO"
+            }
+        } else {
+            try {
+                $shortcuts = Get-ChildItem $rdpDefenderFolderPath -Filter "*.lnk" -ErrorAction SilentlyContinue
+                $shortcutCount = $shortcuts.Count
+                Remove-Item $rdpDefenderFolderPath -Recurse -Force -ErrorAction Stop
+                Write-UninstallLog "Removed RDP Defender folder and $shortcutCount shortcuts" "SUCCESS"
+                $removedCount = 1
+            } catch {
+                Write-UninstallLog "Failed to remove RDP Defender folder: $($_.Exception.Message)" "WARNING"
+                $removedCount = 0
+            }
+        }
+    } else {
+        Write-UninstallLog "RDP Defender folder not found on desktop" "INFO"
+        $removedCount = 0
+    }
+    
+    # Legacy cleanup - remove old individual shortcuts if they exist
+    $legacyShortcuts = @(
         "RDP Defender - Show Stats.lnk",
         "RDP Defender - Generate Report.lnk", 
         "RDP Defender - Quick Status.lnk",
-        "RDP Defender - Management Console.lnk"
+        "RDP Defender - Management Console.lnk",
+        "RDP Defender - Change Port.lnk"
     )
     
-    $removedCount = 0
-    foreach ($shortcut in $shortcuts) {
+    foreach ($shortcut in $legacyShortcuts) {
         $shortcutPath = Join-Path $desktopPath $shortcut
         if (Test-Path $shortcutPath) {
             if ($DryRun) {
