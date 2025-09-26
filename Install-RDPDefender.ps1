@@ -250,13 +250,13 @@ function New-DesktopShortcuts {
         $quickShortcut.IconLocation = "PowerShell.exe,0"
         $quickShortcut.WindowStyle = 1
         $quickShortcut.Save()
-        Write-InstallLog "Created desktop shortcut: RDP Defender - Quick Status" "SUCCESS"
+        Write-InstallLog "Created desktop shortcut: Quick Status" "SUCCESS"
         
-        # RDP Defender - Management Console shortcut
-        $consoleShortcutPath = Join-Path $desktopPath "RDP Defender - Management Console.lnk"
+        # Management Console shortcut
+        $consoleShortcutPath = Join-Path $rdpDefenderFolderPath "Management Console.lnk"
         $consoleShortcut = $shell.CreateShortcut($consoleShortcutPath)
         $consoleShortcut.TargetPath = "PowerShell.exe"
-        $consoleShortcut.Arguments = "-NoProfile -ExecutionPolicy Bypass -Command `"" + `
+        $consoleShortcut.Arguments = "-NoProfile -ExecutionPolicy Bypass -NoExit -Command `"" + `
             "Set-Location '$InstallPath'; " + `
             "Write-Host 'RDP Defender Management Console' -ForegroundColor Cyan; " + `
             "Write-Host '=================================' -ForegroundColor Cyan; " + `

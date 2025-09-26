@@ -30,7 +30,7 @@ After installation, open the **RDP Defender** folder on your desktop and double-
 - **Show Stats**: Instantly view current security statistics
 - **Generate Report**: Create and open comprehensive HTML report
 - **Quick Status**: Fast check of recent attacks and active blocks
-- **Management Console**: Access PowerShell with helpful commands
+- **Management Console**: Opens persistent PowerShell session with command help menu
 - **Change RDP Port**: Interactive RDP port configuration tool
 
 ### Step 3: Test the System

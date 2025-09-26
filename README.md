@@ -80,7 +80,7 @@ After installation, you'll find a **"RDP Defender"** folder on your desktop cont
 - **Show Stats**: View current attack statistics  
 - **Generate Report**: Create comprehensive HTML security report
 - **Quick Status**: Fast overview of recent attacks and active blocks
-- **Management Console**: PowerShell console with built-in help commands
+- **Management Console**: Opens persistent PowerShell console with command help and current directory set
 - **Change RDP Port**: Interactive RDP port configuration tool
 
 ### Installation Verification
