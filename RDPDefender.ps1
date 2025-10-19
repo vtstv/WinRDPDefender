@@ -33,6 +33,17 @@ function Write-RDPLog {
     Add-Content -Path "$LogPath\RDPDefender.log" -Value $logEntry
 }
 
+# Function to get current RDP port
+function Get-CurrentRDPPort {
+    try {
+        $rdpPort = Get-ItemProperty -Path "HKLM:\SYSTEM\CurrentControlSet\Control\Terminal Server\WinStations\RDP-Tcp" -Name "PortNumber" -ErrorAction Stop
+        return $rdpPort.PortNumber
+    } catch {
+        Write-RDPLog "Could not determine RDP port, using default 3389" "WARNING"
+        return 3389
+    }
+}
+
 # Function to get failed RDP attempts from Event Log
 function Get-FailedRDPAttempts {
     param([int]$Minutes)
@@ -84,11 +95,22 @@ function Block-IPAddress {
         return
     }
     
+    # Get current RDP port
+    $rdpPort = Get-CurrentRDPPort
+    
     if (!$TestMode) {
         try {
-            # Create firewall rule to block the IP
-            New-NetFirewallRule -DisplayName $ruleName -Direction Inbound -RemoteAddress $IPAddress -Action Block -Protocol TCP -LocalPort 3389 | Out-Null
-            Write-RDPLog "Blocked IP address: $IPAddress for $Hours hours" "CRITICAL"
+            # Create firewall rule to block the IP on RDP port
+            # Note: Blocking on all ports for maximum security
+            New-NetFirewallRule -DisplayName $ruleName `
+                -Direction Inbound `
+                -RemoteAddress $IPAddress `
+                -Action Block `
+                -Enabled True `
+                -Profile Any `
+                -Description "RDP Defender: Blocked due to $MaxFailedAttempts failed login attempts on port $rdpPort" | Out-Null
+            
+            Write-RDPLog "Blocked IP address: $IPAddress (all ports) for $Hours hours - RDP port: $rdpPort" "CRITICAL"
             
             # Schedule removal of the block
             $taskName = "RDPDefender_Unblock_$($IPAddress -replace '\.', '_')"

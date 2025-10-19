@@ -11,6 +11,7 @@ RDP Defender is a comprehensive PowerShell-based security solution designed to p
 
 ### 🛡️ Core Protection
 - **Automatic IP Blocking**: Blocks IP addresses after configurable failed attempt thresholds
+- **Any RDP Port Support**: Works with default port (3389) or custom RDP ports
 - **Configurable Thresholds**: Customizable failed attempt limits and time windows
 - **Temporary Blocks**: Automatically removes blocks after specified duration
 
@@ -201,8 +202,14 @@ Edit the configuration file at `C:\WinRDPDefender\config.json`:
 # Run with custom settings
 .\RDPDefender.ps1 -MaxFailedAttempts 3 -TimeWindowMinutes 15 -BlockDurationHours 48
 
-# Check specific time window
-.\RDPDefender.ps1 -TimeWindowMinutes 60
+# Emergency: Block known attacking IPs immediately
+.\Block-AttackingIPs.ps1
+
+# Emergency block with custom duration (7 days = 168 hours)
+.\Block-AttackingIPs.ps1 -BlockDurationHours 168 -Force
+
+# Check currently blocked IPs
+Get-NetFirewallRule -DisplayName 'RDPDefender_Block_*' | Format-Table DisplayName, Enabled
 ```
 
 ### Maintenance
@@ -246,6 +253,7 @@ C:\WinRDPDefender\
 ├── RDPMonitor.ps1             # Attack monitoring and reporting
 ├── CleanupTasks.ps1           # Maintenance and cleanup
 ├── Change-RDPPort.ps1         # Secure RDP port configuration
+├── Block-AttackingIPs.ps1     # Emergency IP blocking script
 ├── config.json                # Configuration file
 ├── Install-RDPDefender.ps1    # Installation script
 ├── Uninstall-RDPDefender.ps1  # Complete uninstaller with options
