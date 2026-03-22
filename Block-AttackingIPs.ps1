@@ -19,13 +19,13 @@ if (-NOT ([Security.Principal.WindowsPrincipal] [Security.Principal.WindowsIdent
 # Known attacking IPs 
 $attackingIPs = @(
     "95.214.55.72",     # 8 attempts - Poland/Warsaw/MEVSPACE
-    "59.94.28.178"      # 2 attempts - India/Wayanad/BSNL
+    "59.94.28.178"      # 2 attempts - India/Wayanad/BSNL (last item - no comma)
 )
 
 # Also block entire MEVSPACE subnet ranges (known malicious hosting)
 $attackingSubnets = @(
     "95.214.55.0/24",   # MEVSPACE range 1
-    "95.214.53.0/24",   # MEVSPACE range 2
+    "95.214.53.0/24"    # MEVSPACE range 2 (last item - no comma)
 )
 
 Write-Host "`n=== Emergency IP Blocking Script ===" -ForegroundColor Red

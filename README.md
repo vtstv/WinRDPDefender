@@ -1,433 +1,158 @@
-# RDP Defender - Windows Server 2025 Remote Desktop Protection System
+# RDP Defender
 
-> **Copyright (c) 2025 Murr**  
-> **Repository:** https://github.com/vtstv/WinRDPDefender  
-> **License:** MIT License
+Automated protection system for Windows Server against RDP brute force attacks.
 
-## Overview
-RDP Defender is a comprehensive PowerShell-based security solution designed to protect Windows Server 2025 from RDP brute force attacks. The system automatically monitors failed RDP attempts, blocks malicious IP addresses, and provides detailed reporting capabilities.
+**Copyright (c) 2025 Murr** | [GitHub](https://github.com/vtstv/WinRDPDefender) | MIT License
 
 ## Features
 
-### 🛡️ Core Protection
-- **Automatic IP Blocking**: Blocks IP addresses after configurable failed attempt thresholds
-- **Any RDP Port Support**: Works with default port (3389) or custom RDP ports
-- **Configurable Thresholds**: Customizable failed attempt limits and time windows
-- **Temporary Blocks**: Automatically removes blocks after specified duration
+- Automatic IP blocking after failed login attempts
+- Works with any RDP port (default or custom)
+- Real-time monitoring and detailed reporting
+- Geolocation tracking of attackers
+- Automated cleanup and maintenance
+- HTML reports with statistics
 
-### 📊 Monitoring & Reporting
-- **Real-time Monitoring**: Continuous surveillance of RDP login attempts
-- **Detailed Analytics**: Comprehensive attack pattern analysis
-- **Geolocation Tracking**: Identifies attacker locations and ISP information
-- **HTML Reports**: Professional security reports with charts and statistics
-- **CSV Export**: Data export for further analysis
+## Quick Start
 
-### 🔧 Management Tools
-- **Attack Monitor**: Real-time attack statistics and analysis
-- **Automated Cleanup**: Removes expired blocks and rotates logs
-- **Configuration Management**: Centralized configuration file
+### Installation
 
-### ⚡ Automation
-- **Scheduled Tasks**: Automated monitoring and maintenance
-- **Log Rotation**: Automatic log file management
-- **Self-Healing**: Automatic cleanup of expired rules and tasks
+Double-click `Install.bat` - it will:
+- Request administrator privileges
+- Bypass execution policy automatically
+- Guide you through installation options
 
-## System Requirements
-
-- **Operating System**: Windows Server 2025 (compatible with Server 2019/2022)
-- **PowerShell**: Version 5.1 or higher
-- **Permissions**: Administrator privileges required
-- **Disk Space**: Minimum 100MB for logs and reports
-- **Network**: Internet access for IP geolocation (optional)
-
-## Quick Installation
-
-### Automated Installation (Recommended)
-1. **Download** all scripts to a folder (e.g., `D:\Dev\WinRDPDefender`)
-2. **Open PowerShell as Administrator** (required for installation)
-3. **Navigate** to the script directory: `cd "D:\Dev\WinRDPDefender"`
-4. **Run the installer**:
-   ```powershell
-   # Basic installation
-   .\Install-RDPDefender.ps1
-   
-   # Installation with scheduled tasks (automated monitoring)
-   .\Install-RDPDefender.ps1 -CreateScheduledTasks
-   
-   # Force overwrite existing installation
-   .\Install-RDPDefender.ps1 -Force
-   
-   # Installation without desktop shortcuts
-   .\Install-RDPDefender.ps1 -NoDesktopShortcuts
-   ```
-
-### Custom Installation Options
+Or use PowerShell directly:
 ```powershell
-# Custom installation path and settings
-.\Install-RDPDefender.ps1 -InstallPath "D:\Security\RDPDefender" -MaxFailedAttempts 3 -BlockDurationHours 48 -CreateScheduledTasks
-
-# Conservative settings for low-security environments
-.\Install-RDPDefender.ps1 -MaxFailedAttempts 10 -TimeWindowMinutes 60 -BlockDurationHours 12
-
-# Aggressive settings for high-security environments  
-.\Install-RDPDefender.ps1 -MaxFailedAttempts 3 -TimeWindowMinutes 15 -BlockDurationHours 72 -CreateScheduledTasks
-
-# Server installation without desktop shortcuts
-.\Install-RDPDefender.ps1 -CreateScheduledTasks -NoDesktopShortcuts
+PowerShell.exe -ExecutionPolicy Bypass -File .\Install-RDPDefender.ps1
 ```
 
-### Desktop Shortcuts (Automatic)
-After installation, you'll find a **"RDP Defender"** folder on your desktop containing these convenient shortcuts:
-- **Show Stats**: View current attack statistics  
-- **Generate Report**: Create comprehensive HTML security report
-- **Quick Status**: Fast overview of recent attacks and active blocks
-- **Management Console**: Opens persistent PowerShell console with command help and current directory set
-- **Change RDP Port**: Interactive RDP port configuration tool
+### Uninstallation
 
-### Installation Verification
-After installation, verify the setup:
-```powershell
-# Navigate to installation directory
-cd "C:\WinRDPDefender"
-
-# Test the system
-.\RDPDefender.ps1 -TestMode
-
-# View current statistics
-.\RDPMonitor.ps1 -ShowStats
-
-# Check if scheduled tasks were created (if used -CreateScheduledTasks)
-Get-ScheduledTask -TaskName "RDPDefender_*"
-```
-
-## Uninstallation
-
-RDP Defender provides two uninstaller scripts for complete system cleanup:
-
-### Complete Uninstaller (Recommended)
-The main uninstaller provides detailed control and safety options:
-
-```powershell
-# Basic uninstallation (with confirmation prompt)
-.\Uninstall-RDPDefender.ps1
-
-# Custom installation path
-.\Uninstall-RDPDefender.ps1 -InstallPath "D:\Security\RDPDefender"
-
-# Preserve logs and reports
-.\Uninstall-RDPDefender.ps1 -KeepLogs -KeepReports
-
-# Force removal without confirmation
-.\Uninstall-RDPDefender.ps1 -Force
-
-# Preview what would be removed (no actual changes)
-.\Uninstall-RDPDefender.ps1 -DryRun
-```
-
-**Uninstaller Features:**
-- **Safe Removal**: Confirmation prompts prevent accidental deletion
-- **Selective Cleanup**: Options to preserve logs and reports
-- **Backup Creation**: Automatically backs up preserved data to temp directory
-- **Comprehensive Logging**: Detailed uninstall log for troubleshooting
-- **Dry Run Mode**: Preview removal actions without making changes
-- **Verification**: Post-uninstall verification of cleanup success
-
-### Quick Uninstaller
-For immediate removal without confirmations:
-
-```powershell
-# Immediate removal of all components
-.\Quick-Uninstall.ps1
-
-# Custom installation path
-.\Quick-Uninstall.ps1 -InstallPath "D:\Security\RDPDefender"
-```
-
-**What Gets Removed:**
-- ✅ All firewall rules (`RDPDefender_Block_*`)
-- ✅ All scheduled tasks (`RDPDefender_Unblock_*`)
-- ✅ Installation directory and all contents
-- ✅ Log files and reports (unless preserved)
-- ✅ Temporary files and cache
-- ✅ Configuration files
-
-**Preserved Data Locations:**
-When using `-KeepLogs` or `-KeepReports`, data is backed up to:
-- Logs: `%TEMP%\RDPDefender_Logs_Backup_[timestamp]`
-- Reports: `%TEMP%\RDPDefender_Reports_Backup_[timestamp]`
+Double-click `Uninstall.bat` and choose removal options.
 
 ## Configuration
 
-### Default Settings
-- **Max Failed Attempts**: 5 attempts
-- **Time Window**: 30 minutes
-- **Block Duration**: 24 hours
-- **Monitoring Interval**: 5 minutes
-- **Log Retention**: 30 days
+Default settings (customizable during installation):
+- Max failed attempts: 5
+- Time window: 30 minutes
+- Block duration: 24 hours
+- Monitoring interval: 5 minutes (if scheduled tasks enabled)
 
-### Customization
-Edit the configuration file at `C:\WinRDPDefender\config.json`:
-```json
-{
-  "MaxFailedAttempts": 5,
-  "TimeWindowMinutes": 30,
-  "BlockDurationHours": 24,
-  "LogPath": "C:\\WinRDPDefender\\Logs",
-  "ReportPath": "C:\\WinRDPDefender\\Reports"
-}
-```
+Edit `C:\WinRDPDefender\config.json` to adjust settings after installation.
 
-## Usage Guide
+## Usage
 
-### Monitoring and Analysis
+### Desktop Shortcuts (if created)
+- **Show Stats** - View attack statistics
+- **Generate Report** - Create HTML security report
+- **Quick Status** - Fast overview of recent attacks
+- **Management Console** - PowerShell console with commands
+- **Change RDP Port** - Secure port configuration
+
+### Command Line
+
 ```powershell
-# View current attack statistics
+# View statistics
 .\RDPMonitor.ps1 -ShowStats
 
-# Generate detailed HTML report
+# Generate HTML report (last 7 days)
 .\RDPMonitor.ps1 -GenerateReport -DaysBack 7
 
-# Export data to CSV
+# Export to CSV
 .\RDPMonitor.ps1 -ExportCSV -DaysBack 30
 
-# Analyze specific time period
-.\RDPMonitor.ps1 -ShowStats -DaysBack 1
-```
-
-### Manual Protection
-```powershell
-# Run defender manually (test mode)
+# Test protection system
 .\RDPDefender.ps1 -TestMode
 
-# Run with custom settings
-.\RDPDefender.ps1 -MaxFailedAttempts 3 -TimeWindowMinutes 15 -BlockDurationHours 48
-
-# Emergency: Block known attacking IPs immediately
-.\Block-AttackingIPs.ps1
-
-# Emergency block with custom duration (7 days = 168 hours)
-.\Block-AttackingIPs.ps1 -BlockDurationHours 168 -Force
-
-# Check currently blocked IPs
-Get-NetFirewallRule -DisplayName 'RDPDefender_Block_*' | Format-Table DisplayName, Enabled
-```
-
-### Maintenance
-```powershell
-# Run cleanup manually
-.\CleanupTasks.ps1
-
-# Dry run cleanup (preview changes)
-.\CleanupTasks.ps1 -DryRun
-
-# Custom cleanup settings
-.\CleanupTasks.ps1 -CleanupDays 60 -MaxLogSizeMB 200
-```
-
-### RDP Port Security
-```powershell
-# Interactive mode - prompts for port selection (3390 or custom)
+# Change RDP port
 .\Change-RDPPort.ps1
 
-# Change to specific port with confirmation prompt
-.\Change-RDPPort.ps1 -NewPort 5555
+# Manual cleanup
+.\CleanupTasks.ps1
+```
 
-# Change to specific port silently (no prompts)
-.\Change-RDPPort.ps1 -NewPort 5555 -Force
+## Emergency Commands
 
-# Check current RDP configuration
-.\Change-RDPPort.ps1 -CheckOnly
+### Remove all blocks
+```powershell
+Get-NetFirewallRule -DisplayName "RDPDefender_Block_*" | Remove-NetFirewallRule
+Get-ScheduledTask -TaskName "RDPDefender_Unblock_*" | Unregister-ScheduledTask -Confirm:$false
+```
 
-# Restore to default port (3389) with confirmation
-.\Change-RDPPort.ps1 -RestoreDefault
-
-# Show help and usage examples
-.\Change-RDPPort.ps1 -Help
+### List blocked IPs
+```powershell
+Get-NetFirewallRule -DisplayName "RDPDefender_Block_*" | 
+    ForEach-Object { $_.DisplayName -replace "RDPDefender_Block_", "" -replace "_", "." }
 ```
 
 ## File Structure
 
 ```
 C:\WinRDPDefender\
-├── RDPDefender.ps1            # Main protection script
-├── RDPMonitor.ps1             # Attack monitoring and reporting
-├── CleanupTasks.ps1           # Maintenance and cleanup
-├── Change-RDPPort.ps1         # Secure RDP port configuration
-├── Block-AttackingIPs.ps1     # Emergency IP blocking script
-├── config.json                # Configuration file
-├── Install-RDPDefender.ps1    # Installation script
-├── Uninstall-RDPDefender.ps1  # Complete uninstaller with options
-├── Quick-Uninstall.ps1        # Fast uninstaller without prompts
-├── README.md                  # Documentation
-├── EXAMPLES.md                # Usage examples
-├── Logs\
-│   ├── RDPDefender.log        # Main activity log
-│   ├── Cleanup.log            # Cleanup operations log
-│   └── Installation.log       # Installation log
-└── Reports\
-    ├── RDP_Security_Report_*.html  # HTML reports
-    └── RDP_Events_*.csv           # CSV exports
+├── RDPDefender.ps1           # Main protection script
+├── RDPMonitor.ps1            # Monitoring and reporting
+├── CleanupTasks.ps1          # Maintenance
+├── Change-RDPPort.ps1        # Port configuration
+├── Block-AttackingIPs.ps1    # Emergency blocking
+├── config.json               # Configuration
+├── Install.bat               # Installation launcher
+├── Uninstall.bat             # Uninstallation launcher
+├── Logs\                     # Activity logs
+└── Reports\                  # HTML/CSV reports
 ```
-
-## How It Works
-
-### 1. Event Monitoring
-- Monitors Windows Security Event Log (Event IDs 4624, 4625)
-- Filters for RDP-specific logon attempts (Logon Types 3 and 10)
-- Tracks failed attempts by source IP address
-
-### 2. Threat Detection
-- Counts failed attempts within configurable time windows
-- Compares against threshold settings
-- Blocks ALL IPs that exceed the threshold
-
-### 3. Response Actions
-- Creates Windows Firewall rules to block malicious IPs
-- Schedules automatic removal of blocks
-- Logs all security events with timestamps
-
-### 4. Maintenance
-- Automatically removes expired firewall rules
-- Rotates log files when they exceed size limits
-- Cleans up old scheduled tasks
-- Generates periodic security reports
-
-## Security Considerations
-
-### ✅ Best Practices
-- **Regular Monitoring**: Review logs and reports weekly
-- **Strong Passwords**: Use complex passwords for all accounts
-- **Multi-Factor Authentication**: Enable MFA when possible
-- **VPN Access**: Consider VPN for remote access
-- **Port Changes**: Change default RDP port from 3389
-- **Network Level Authentication**: Enable NLA for RDP
-
-### ⚠️ Important Notes
-- **ALL IPs will be blocked** after failed attempts - no exceptions
-- **Test in a controlled environment** before production deployment
-- **Monitor blocked IPs** to ensure legitimate users aren't affected
-- **Keep firewall logs enabled** for audit purposes
-- **Regular backups** of configuration files
 
 ## Troubleshooting
 
-### Common Issues
+### Execution Policy Error
 
-#### 1. Script Execution Policy
-```powershell
-# Enable script execution (run as Administrator)
-Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope LocalMachine
+Use one of these methods:
+
+**Option A: Use batch file (easiest)**
+```cmd
+Install.bat
 ```
 
-#### 2. Locked Out of RDP
-- **Physical Access**: Log in locally to remove blocks
-- **PowerShell Command**: 
-  ```powershell
-  Get-NetFirewallRule -DisplayName "RDPDefender_Block_*" | Remove-NetFirewallRule
-  ```
-
-#### 3. Scripts Not Running
-- Verify Administrator privileges
-- Check Windows Event Log for errors
-- Ensure all files are in correct locations
-- Verify scheduled tasks are created and enabled
-
-### Logging and Diagnostics
-- **Main Log**: `C:\WinRDPDefender\Logs\RDPDefender.log`
-- **Windows Event Log**: Security log (Event IDs 4624, 4625)
-- **Firewall Log**: `%SystemRoot%\System32\LogFiles\Firewall\pfirewall.log`
-- **Task Scheduler**: Check scheduled task history
-
-### Performance Optimization
-- **Log Rotation**: Configure appropriate log size limits
-- **Cleanup Frequency**: Adjust cleanup intervals based on activity
-- **Monitoring Window**: Balance security vs. performance
-
-## Command Reference
-
-### Main Protection Script
+**Option B: Bypass for single execution**
 ```powershell
-# Basic usage
-.\RDPDefender.ps1
-
-# Test mode (no actual blocking)
-.\RDPDefender.ps1 -TestMode
-
-# Custom settings
-.\RDPDefender.ps1 -MaxFailedAttempts 3 -TimeWindowMinutes 15 -BlockDurationHours 48
+PowerShell.exe -ExecutionPolicy Bypass -File .\Install-RDPDefender.ps1
 ```
 
-### Monitoring and Reports
+**Option C: Set policy permanently**
 ```powershell
-# Show current statistics
-.\RDPMonitor.ps1 -ShowStats
-
-# Generate HTML report
-.\RDPMonitor.ps1 -GenerateReport -DaysBack 7
-
-# Export to CSV
-.\RDPMonitor.ps1 -ExportCSV -DaysBack 30
+Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser
 ```
 
-### Cleanup and Maintenance
+**Option D: Unblock downloaded files**
 ```powershell
-# Standard cleanup
-.\CleanupTasks.ps1
-
-# Preview changes without executing
-.\CleanupTasks.ps1 -DryRun
+Get-ChildItem -Path . -Recurse | Unblock-File
 ```
 
-## Emergency Commands
+### Locked Out of RDP
 
-### Remove All Blocks
+Log in locally and run:
 ```powershell
-# Remove all RDP Defender firewall rules
 Get-NetFirewallRule -DisplayName "RDPDefender_Block_*" | Remove-NetFirewallRule
-
-# Remove all scheduled unblock tasks
-Get-ScheduledTask -TaskName "RDPDefender_Unblock_*" | Unregister-ScheduledTask -Confirm:$false
 ```
 
-### Check Current Blocks
-```powershell
-# List all blocked IPs
-Get-NetFirewallRule -DisplayName "RDPDefender_Block_*" | 
-    ForEach-Object { $_.DisplayName -replace "RDPDefender_Block_", "" -replace "_", "." }
-```
+## System Requirements
 
-## Support and Maintenance
+- Windows Server 2019/2022/2025
+- PowerShell 5.1 or higher
+- Administrator privileges
 
-### Regular Maintenance Tasks
-- **Weekly**: Review attack reports and statistics
-- **Monthly**: Review and optimize configuration settings
-- **Quarterly**: Review security policies and thresholds
+## Security Notes
 
-### Backup Strategy
-```powershell
-# Backup configuration and entire directory
-Copy-Item "C:\WinRDPDefender" "C:\Backup\WinRDPDefender_$(Get-Date -Format 'yyyyMMdd')" -Recurse
-```
+- ALL IPs exceeding thresholds will be blocked automatically
+- Test in a controlled environment first
+- Keep alternative access methods available
+- Monitor logs regularly
+- Use strong passwords and enable NLA
 
-## License and Disclaimer
+## License
 
-This software is provided "as is" without warranty of any kind. Use at your own risk. Always test thoroughly before deploying in production environments. The authors are not responsible for any damage or security breaches that may occur.
-
-## License and Copyright
-
-**Copyright (c) 2025 Murr**
-
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-
-### Repository Information
-- **GitHub Repository:** https://github.com/vtstv/WinRDPDefender
-- **Documentation:** Available in this repository
-- **Issues and Support:** Please use GitHub Issues for bug reports and feature requests
-- **Contributions:** Pull requests are welcome
-
-### Attribution
-If you use this software in your environment, attribution is appreciated but not required. When sharing or modifying this code, please maintain the copyright notice and license information.
+MIT License - see [LICENSE](LICENSE) file for details.
 
 ---
 
-**RDP Defender** - Protecting Windows Server 2025 from brute force attacks with aggressive IP blocking.
+**RDP Defender** - Protecting Windows Server from brute force attacks.

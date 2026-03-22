@@ -3,6 +3,13 @@
 # Copyright (c) 2025 Murr
 # Repository: https://github.com/vtstv/WinRDPDefender
 # Licensed under MIT License
+#
+# INSTALLATION:
+# Simply run the script - it will automatically request administrator privileges:
+# .\Install-RDPDefender.ps1
+#
+# Or with execution policy bypass:
+# PowerShell.exe -ExecutionPolicy Bypass -File .\Install-RDPDefender.ps1
 
 param(
     [string]$InstallPath = "C:\WinRDPDefender",
@@ -13,6 +20,35 @@ param(
     [switch]$NoDesktopShortcuts,
     [switch]$Force
 )
+
+# Self-elevate the script if required
+if (-not ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)) {
+    Write-Host "Requesting administrator privileges..." -ForegroundColor Yellow
+    
+    # Build arguments string
+    $arguments = "-NoProfile -ExecutionPolicy Bypass -File `"$PSCommandPath`""
+    
+    # Add all bound parameters
+    foreach ($param in $PSBoundParameters.GetEnumerator()) {
+        if ($param.Value -is [switch]) {
+            if ($param.Value) {
+                $arguments += " -$($param.Key)"
+            }
+        } else {
+            $arguments += " -$($param.Key) `"$($param.Value)`""
+        }
+    }
+    
+    try {
+        Start-Process PowerShell.exe -ArgumentList $arguments -Verb RunAs -Wait
+        exit
+    } catch {
+        Write-Host "Failed to elevate privileges: $($_.Exception.Message)" -ForegroundColor Red
+        Write-Host "Please run PowerShell as Administrator manually." -ForegroundColor Yellow
+        Read-Host "Press Enter to exit"
+        exit 1
+    }
+}
 
 # Function to write installation log
 function Write-InstallLog {
@@ -80,6 +116,16 @@ function Copy-ScriptFiles {
     $currentLocation = $PSScriptRoot
     if (-not $currentLocation) {
         $currentLocation = Split-Path -Parent $MyInvocation.MyCommand.Path
+    }
+    
+    # Normalize paths for comparison
+    $currentLocationNormalized = $currentLocation.TrimEnd('\').ToLower()
+    $installPathNormalized = $InstallPath.TrimEnd('\').ToLower()
+    
+    # Check if running from installation directory
+    if ($currentLocationNormalized -eq $installPathNormalized) {
+        Write-InstallLog "Running from installation directory - skipping file copy" "INFO"
+        return $true
     }
     
     $scriptFiles = @(

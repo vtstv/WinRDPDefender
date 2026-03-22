@@ -132,10 +132,18 @@ $remainingDir = Test-Path $InstallPath
 if (($remainingRules | Measure-Object).Count -eq 0 -and 
     ($remainingTasks | Measure-Object).Count -eq 0 -and 
     -not $remainingDir) {
-    Write-Host "✓ All RDP Defender components successfully removed!" -ForegroundColor Green
+    Write-Host "All RDP Defender components successfully removed!" -ForegroundColor Green
 } else {
-    Write-Host "⚠ Some components may still remain:" -ForegroundColor Yellow
-    if ($remainingRules) { Write-Host "  - Firewall rules: $(($remainingRules | Measure-Object).Count)" -ForegroundColor Yellow }
-    if ($remainingTasks) { Write-Host "  - Scheduled tasks: $(($remainingTasks | Measure-Object).Count)" -ForegroundColor Yellow }
-    if ($remainingDir) { Write-Host "  - Installation directory still exists" -ForegroundColor Yellow }
+    Write-Host "Some components may still remain:" -ForegroundColor Yellow
+    if ($remainingRules) { 
+        $ruleCount = ($remainingRules | Measure-Object).Count
+        Write-Host "  - Firewall rules: $ruleCount" -ForegroundColor Yellow 
+    }
+    if ($remainingTasks) { 
+        $taskCount = ($remainingTasks | Measure-Object).Count
+        Write-Host "  - Scheduled tasks: $taskCount" -ForegroundColor Yellow 
+    }
+    if ($remainingDir) { 
+        Write-Host "  - Installation directory still exists" -ForegroundColor Yellow 
+    }
 }

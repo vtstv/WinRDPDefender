@@ -540,8 +540,14 @@ function Start-RDPPortConfiguration {
         
         # Final confirmation
         Write-Host "`n[WARNING] This will change your RDP port to $NewPort" -ForegroundColor Yellow
-        Write-Host "Make sure you update your RDP clients and firewall rules!" -ForegroundColor Yellow
-        $confirm = Read-Host "Do you want to continue? (y/N)"
+        Write-Host "The script will automatically:" -ForegroundColor Cyan
+        Write-Host "  * Update registry settings" -ForegroundColor White
+        Write-Host "  * Create new firewall rules for port $NewPort" -ForegroundColor White
+        Write-Host "  * Disable old firewall rules" -ForegroundColor White
+        Write-Host "  * Restart RDP service" -ForegroundColor White
+        Write-Host "  * Update RDP Defender scripts" -ForegroundColor White
+        Write-Host "`nYou will need to update your RDP clients to use port $NewPort" -ForegroundColor Yellow
+        $confirm = Read-Host "`nDo you want to continue? (y/N)"
         if ($confirm -ne 'y' -and $confirm -ne 'Y') {
             Write-Host "Operation cancelled by user." -ForegroundColor Yellow
             return
@@ -622,16 +628,41 @@ function Start-RDPPortConfiguration {
     if ($success) {
         Write-RDPPortLog "=== RDP Port Configuration Completed Successfully ===" "SUCCESS"
         if (-not $TestMode) {
-            Write-Host "`n[SUCCESS] RDP Port Change Summary:" -ForegroundColor Green
-            Write-Host "   Old Port: $oldPort" -ForegroundColor White
-            Write-Host "   New Port: $NewPort" -ForegroundColor White
-            Write-Host "   Firewall Rules: Updated" -ForegroundColor White
-            Write-Host "   RDP Service: Restarted" -ForegroundColor White
-            Write-Host "   Backup: $backupPath" -ForegroundColor White
-            Write-Host "`n[WARNING] Important Notes:" -ForegroundColor Yellow
-            Write-Host "   - Update your RDP clients to use port $NewPort" -ForegroundColor Yellow
-            Write-Host "   - Test connectivity before closing this session" -ForegroundColor Yellow
-            Write-Host "   - Backup is saved for rollback if needed" -ForegroundColor Yellow
+            Write-Host "`n============================================================" -ForegroundColor Green
+            Write-Host "         RDP PORT CHANGE COMPLETED SUCCESSFULLY             " -ForegroundColor Green
+            Write-Host "============================================================" -ForegroundColor Green
+            Write-Host ""
+            Write-Host "Configuration Summary:" -ForegroundColor Cyan
+            Write-Host "  Old Port:          $oldPort" -ForegroundColor White
+            Write-Host "  New Port:          $NewPort" -ForegroundColor Green
+            Write-Host ""
+            Write-Host "Changes Applied:" -ForegroundColor Cyan
+            Write-Host "  [+] Registry updated" -ForegroundColor Green
+            Write-Host "  [+] Firewall rules created for port $NewPort" -ForegroundColor Green
+            Write-Host "  [+] Old firewall rules disabled" -ForegroundColor Green
+            Write-Host "  [+] RDP service restarted" -ForegroundColor Green
+            Write-Host "  [+] RDP Defender scripts updated" -ForegroundColor Green
+            Write-Host ""
+            Write-Host "Firewall Rules Created:" -ForegroundColor Cyan
+            $newRules = Get-NetFirewallRule -DisplayName "RDP_Custom_Port_$NewPort*" -ErrorAction SilentlyContinue
+            foreach ($rule in $newRules) {
+                Write-Host "  [+] $($rule.DisplayName) - Enabled" -ForegroundColor Green
+            }
+            Write-Host ""
+            Write-Host "Backup Location:" -ForegroundColor Cyan
+            Write-Host "  $backupPath" -ForegroundColor White
+            Write-Host ""
+            Write-Host "============================================================" -ForegroundColor Yellow
+            Write-Host "                    IMPORTANT NOTES                         " -ForegroundColor Yellow
+            Write-Host "============================================================" -ForegroundColor Yellow
+            Write-Host "  [!] Update your RDP clients to connect to port $NewPort" -ForegroundColor Yellow
+            Write-Host "  [!] Test connectivity before closing this session" -ForegroundColor Yellow
+            Write-Host "  [!] External firewalls may need manual configuration" -ForegroundColor Yellow
+            Write-Host ""
+            Write-Host "To test connection from another machine:" -ForegroundColor Cyan
+            $computerName = $env:COMPUTERNAME
+            Write-Host "  mstsc /v:${computerName}:$NewPort" -ForegroundColor White
+            Write-Host ""
         }
     } else {
         Write-RDPPortLog "=== RDP Port Configuration Failed ===" "ERROR"
