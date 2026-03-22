@@ -133,6 +133,7 @@ function Copy-ScriptFiles {
         "RDPMonitor.ps1", 
         "CleanupTasks.ps1",
         "Change-RDPPort.ps1",
+        "ManagementConsole.ps1",
         "Uninstall-RDPDefender.ps1",
         "Quick-Uninstall.ps1",
         "README.md",
@@ -302,20 +303,9 @@ function New-DesktopShortcuts {
         $consoleShortcutPath = Join-Path $rdpDefenderFolderPath "Management Console.lnk"
         $consoleShortcut = $shell.CreateShortcut($consoleShortcutPath)
         $consoleShortcut.TargetPath = "PowerShell.exe"
-        $consoleShortcut.Arguments = "-NoProfile -ExecutionPolicy Bypass -NoExit -Command `"" + `
-            "Set-Location '$InstallPath'; " + `
-            "Write-Host 'RDP Defender Management Console' -ForegroundColor Cyan; " + `
-            "Write-Host '=================================' -ForegroundColor Cyan; " + `
-            "Write-Host ''; Write-Host 'Available Commands:' -ForegroundColor Yellow; " + `
-            "Write-Host '  .\RDPDefender.ps1 -TestMode     - Test protection system'; " + `
-            "Write-Host '  .\RDPMonitor.ps1 -ShowStats     - View statistics'; " + `
-            "Write-Host '  .\RDPMonitor.ps1 -GenerateReport - Generate HTML report'; " + `
-            "Write-Host '  .\CleanupTasks.ps1 -DryRun      - Preview cleanup actions'; " + `
-            "Write-Host '  .\Change-RDPPort.ps1            - Interactive RDP port configuration'; " + `
-            "Write-Host '  Get-NetFirewallRule -DisplayName RDPDefender_Block_* - List blocked IPs'; " + `
-            "Write-Host ''; Write-Host 'Current Location: $InstallPath' -ForegroundColor Green`""
+        $consoleShortcut.Arguments = "-NoProfile -ExecutionPolicy Bypass -File `"$InstallPath\ManagementConsole.ps1`""
         $consoleShortcut.WorkingDirectory = $InstallPath
-        $consoleShortcut.Description = "Open PowerShell console in RDP Defender directory with command help"
+        $consoleShortcut.Description = "Interactive management console with menu-driven interface"
         $consoleShortcut.IconLocation = "PowerShell.exe,0"
         $consoleShortcut.WindowStyle = 1
         $consoleShortcut.Save()
