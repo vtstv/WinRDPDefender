@@ -48,13 +48,19 @@ function Get-RDPEvents {
         
         foreach ($logEvent in $successEvents) {
             $xml = [xml]$logEvent.ToXml()
-            $logonType = $xml.Event.EventData.Data | Where-Object { $_.Name -eq 'LogonType' } | Select-Object -ExpandProperty '#text'
+            $logonTypeData = $xml.Event.EventData.Data | Where-Object { $_.Name -eq 'LogonType' }
+            $logonType = if ($logonTypeData) { $logonTypeData.'#text' } else { $null }
             
             # Filter for RDP logons (Type 3 and 10)
             if ($logonType -eq "3" -or $logonType -eq "10") {
-                $sourceIP = $xml.Event.EventData.Data | Where-Object { $_.Name -eq 'IpAddress' } | Select-Object -ExpandProperty '#text'
-                $userName = $xml.Event.EventData.Data | Where-Object { $_.Name -eq 'TargetUserName' } | Select-Object -ExpandProperty '#text'
-                $domain = $xml.Event.EventData.Data | Where-Object { $_.Name -eq 'TargetDomainName' } | Select-Object -ExpandProperty '#text'
+                $sourceIPData = $xml.Event.EventData.Data | Where-Object { $_.Name -eq 'IpAddress' }
+                $sourceIP = if ($sourceIPData) { $sourceIPData.'#text' } else { $null }
+                
+                $userNameData = $xml.Event.EventData.Data | Where-Object { $_.Name -eq 'TargetUserName' }
+                $userName = if ($userNameData) { $userNameData.'#text' } else { "Unknown" }
+                
+                $domainData = $xml.Event.EventData.Data | Where-Object { $_.Name -eq 'TargetDomainName' }
+                $domain = if ($domainData) { $domainData.'#text' } else { "" }
                 
                 if ($sourceIP -and $sourceIP -ne "-" -and $sourceIP -ne "127.0.0.1") {
                     $events += [PSCustomObject]@{
@@ -83,14 +89,22 @@ function Get-RDPEvents {
         
         foreach ($logEvent in $failedEvents) {
             $xml = [xml]$logEvent.ToXml()
-            $logonType = $xml.Event.EventData.Data | Where-Object { $_.Name -eq 'LogonType' } | Select-Object -ExpandProperty '#text'
+            $logonTypeData = $xml.Event.EventData.Data | Where-Object { $_.Name -eq 'LogonType' }
+            $logonType = if ($logonTypeData) { $logonTypeData.'#text' } else { $null }
             
             # Filter for RDP logons (Type 3 and 10)
             if ($logonType -eq "3" -or $logonType -eq "10") {
-                $sourceIP = $xml.Event.EventData.Data | Where-Object { $_.Name -eq 'IpAddress' } | Select-Object -ExpandProperty '#text'
-                $userName = $xml.Event.EventData.Data | Where-Object { $_.Name -eq 'TargetUserName' } | Select-Object -ExpandProperty '#text'
-                $domain = $xml.Event.EventData.Data | Where-Object { $_.Name -eq 'TargetDomainName' } | Select-Object -ExpandProperty '#text'
-                $failureReason = $xml.Event.EventData.Data | Where-Object { $_.Name -eq 'Status' } | Select-Object -ExpandProperty '#text'
+                $sourceIPData = $xml.Event.EventData.Data | Where-Object { $_.Name -eq 'IpAddress' }
+                $sourceIP = if ($sourceIPData) { $sourceIPData.'#text' } else { $null }
+                
+                $userNameData = $xml.Event.EventData.Data | Where-Object { $_.Name -eq 'TargetUserName' }
+                $userName = if ($userNameData) { $userNameData.'#text' } else { "Unknown" }
+                
+                $domainData = $xml.Event.EventData.Data | Where-Object { $_.Name -eq 'TargetDomainName' }
+                $domain = if ($domainData) { $domainData.'#text' } else { "" }
+                
+                $failureReasonData = $xml.Event.EventData.Data | Where-Object { $_.Name -eq 'Status' }
+                $failureReason = if ($failureReasonData) { $failureReasonData.'#text' } else { "" }
                 
                 if ($sourceIP -and $sourceIP -ne "-" -and $sourceIP -ne "127.0.0.1") {
                     $events += [PSCustomObject]@{
@@ -168,11 +182,14 @@ function Get-AttackAnalysis {
     }
     
     # Top target users
-    $userCounts = $Events | Where-Object { $_.EventType -eq "Failed" } | Group-Object UserName | Sort-Object Count -Descending | Select-Object -First 10
-    foreach ($user in $userCounts) {
-        $analysis.TopTargetUsers += [PSCustomObject]@{
-            UserName = $user.Name
-            FailedAttempts = $user.Count
+    $failedEvents = $Events | Where-Object { $_.EventType -eq "Failed" -and $_.UserName }
+    if ($failedEvents) {
+        $userCounts = $failedEvents | Group-Object UserName | Sort-Object Count -Descending | Select-Object -First 10
+        foreach ($user in $userCounts) {
+            $analysis.TopTargetUsers += [PSCustomObject]@{
+                UserName = $user.Name
+                FailedAttempts = $user.Count
+            }
         }
     }
     

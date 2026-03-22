@@ -86,54 +86,6 @@ Get-NetFirewallRule -DisplayName "RDPDefender_Block_*" |
     ForEach-Object { $_.DisplayName -replace "RDPDefender_Block_", "" -replace "_", "." }
 ```
 
-## File Structure
-
-```
-C:\WinRDPDefender\
-├── RDPDefender.ps1           # Main protection script
-├── RDPMonitor.ps1            # Monitoring and reporting
-├── CleanupTasks.ps1          # Maintenance
-├── Change-RDPPort.ps1        # Port configuration
-├── Block-AttackingIPs.ps1    # Emergency blocking
-├── config.json               # Configuration
-├── Install.bat               # Installation launcher
-├── Uninstall.bat             # Uninstallation launcher
-├── Logs\                     # Activity logs
-└── Reports\                  # HTML/CSV reports
-```
-
-## Troubleshooting
-
-### Execution Policy Error
-
-Use one of these methods:
-
-**Option A: Use batch file (easiest)**
-```cmd
-Install.bat
-```
-
-**Option B: Bypass for single execution**
-```powershell
-PowerShell.exe -ExecutionPolicy Bypass -File .\Install-RDPDefender.ps1
-```
-
-**Option C: Set policy permanently**
-```powershell
-Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser
-```
-
-**Option D: Unblock downloaded files**
-```powershell
-Get-ChildItem -Path . -Recurse | Unblock-File
-```
-
-### Locked Out of RDP
-
-Log in locally and run:
-```powershell
-Get-NetFirewallRule -DisplayName "RDPDefender_Block_*" | Remove-NetFirewallRule
-```
 
 ## System Requirements
 
