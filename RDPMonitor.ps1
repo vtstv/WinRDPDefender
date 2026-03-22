@@ -237,11 +237,29 @@ function Show-Statistics {
     }
     
     Write-Host "`nHourly Attack Distribution:" -ForegroundColor Yellow
+    $maxCount = ($Analysis.HourlyDistribution.Values | Measure-Object -Maximum).Maximum
+    if ($maxCount -eq 0) { $maxCount = 1 }
+    
     for ($hour = 0; $hour -lt 24; $hour++) {
         $count = $Analysis.HourlyDistribution[$hour]
-        $bar = "█" * [Math]::Min($count / 10, 50)
-        Write-Host ("{0:D2}:00 [{1,3}] {2}" -f $hour, $count, $bar)
+        $barLength = [Math]::Floor(($count / $maxCount) * 40)
+        $bar = "#" * $barLength
+        
+        $hourStr = "{0:D2}:00" -f $hour
+        $countStr = "{0,5}" -f $count
+        
+        if ($count -gt 0) {
+            Write-Host "$hourStr $countStr | $bar" -ForegroundColor $(
+                if ($count -gt ($maxCount * 0.7)) { "Red" }
+                elseif ($count -gt ($maxCount * 0.4)) { "Yellow" }
+                else { "Green" }
+            )
+        } else {
+            Write-Host "$hourStr $countStr |" -ForegroundColor Gray
+        }
     }
+    
+    Write-Host "`nLegend: Each # = ~$([Math]::Ceiling($maxCount/40)) attacks" -ForegroundColor Gray
 }
 
 # Function to generate HTML report
