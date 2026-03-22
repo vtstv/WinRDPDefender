@@ -11,7 +11,9 @@ param(
     [switch]$GenerateReport = $false,
     [switch]$ShowStats = $false,
     [switch]$ExportCSV = $false,
-    [string]$ReportPath = "C:\WinRDPDefender\Reports"
+    [string]$ReportPath = "C:\WinRDPDefender\Reports",
+    [int]$MaxEvents = 0,  # 0 = unlimited, set to limit for testing (e.g., 1000)
+    [switch]$SkipGeoLocation = $false  # Skip geolocation for faster testing
 )
 
 # Ensure running as administrator
@@ -29,73 +31,60 @@ if (($GenerateReport -or $ExportCSV) -and !(Test-Path $ReportPath)) {
     New-Item -ItemType Directory -Path $ReportPath -Force | Out-Null
 }
 
-# Function to get RDP events
+# Function to get RDP events (optimized)
 function Get-RDPEvents {
-    param([int]$Days)
+    param([int]$Days, [int]$MaxEvents = 0)
     
     $startTime = (Get-Date).AddDays(-$Days)
     $events = @()
     
     Write-Host "Analyzing RDP events from the last $Days days..." -ForegroundColor Cyan
-    
-    # Get successful logon events (Event ID 4624)
-    try {
-        $successEvents = Get-WinEvent -FilterHashtable @{
-            LogName = 'Security'
-            ID = 4624
-            StartTime = $startTime
-        } -ErrorAction SilentlyContinue
-        
-        foreach ($logEvent in $successEvents) {
-            $xml = [xml]$logEvent.ToXml()
-            $logonTypeData = $xml.Event.EventData.Data | Where-Object { $_.Name -eq 'LogonType' }
-            $logonType = if ($logonTypeData) { $logonTypeData.'#text' } else { $null }
-            
-            # Filter for RDP logons (Type 3 and 10)
-            if ($logonType -eq "3" -or $logonType -eq "10") {
-                $sourceIPData = $xml.Event.EventData.Data | Where-Object { $_.Name -eq 'IpAddress' }
-                $sourceIP = if ($sourceIPData) { $sourceIPData.'#text' } else { $null }
-                
-                $userNameData = $xml.Event.EventData.Data | Where-Object { $_.Name -eq 'TargetUserName' }
-                $userName = if ($userNameData) { $userNameData.'#text' } else { "Unknown" }
-                
-                $domainData = $xml.Event.EventData.Data | Where-Object { $_.Name -eq 'TargetDomainName' }
-                $domain = if ($domainData) { $domainData.'#text' } else { "" }
-                
-                if ($sourceIP -and $sourceIP -ne "-" -and $sourceIP -ne "127.0.0.1") {
-                    $events += [PSCustomObject]@{
-                        TimeCreated = $logEvent.TimeCreated
-                        EventType = "Success"
-                        SourceIP = $sourceIP
-                        UserName = $userName
-                        Domain = $domain
-                        LogonType = $logonType
-                        EventID = $logEvent.Id
-                    }
-                }
-            }
-        }
-    } catch {
-        Write-Warning "Could not retrieve successful logon events: $($_.Exception.Message)"
+    if ($MaxEvents -gt 0) {
+        Write-Host "Limiting to first $MaxEvents events for testing..." -ForegroundColor Yellow
     }
     
-    # Get failed logon events (Event ID 4625)
+    # Get both successful and failed events in one query for better performance
     try {
-        $failedEvents = Get-WinEvent -FilterHashtable @{
-            LogName = 'Security'
-            ID = 4625
-            StartTime = $startTime
-        } -ErrorAction SilentlyContinue
+        Write-Host "Fetching events from Security log..." -ForegroundColor Gray
         
-        foreach ($logEvent in $failedEvents) {
+        $filterParams = @{
+            LogName = 'Security'
+            ID = 4624, 4625
+            StartTime = $startTime
+        }
+        
+        if ($MaxEvents -gt 0) {
+            $allEvents = Get-WinEvent -FilterHashtable $filterParams -MaxEvents $MaxEvents -ErrorAction SilentlyContinue
+        } else {
+            $allEvents = Get-WinEvent -FilterHashtable $filterParams -ErrorAction SilentlyContinue
+        }
+        
+        Write-Host "Processing $($allEvents.Count) events..." -ForegroundColor Gray
+        
+        $processedCount = 0
+        $rdpCount = 0
+        
+        foreach ($logEvent in $allEvents) {
+            $processedCount++
+            
+            # Show progress every 1000 events
+            if ($processedCount % 1000 -eq 0) {
+                Write-Host "  Processed $processedCount events, found $rdpCount RDP events..." -ForegroundColor Gray
+            }
+            
             $xml = [xml]$logEvent.ToXml()
             $logonTypeData = $xml.Event.EventData.Data | Where-Object { $_.Name -eq 'LogonType' }
             $logonType = if ($logonTypeData) { $logonTypeData.'#text' } else { $null }
             
-            # Filter for RDP logons (Type 3 and 10)
+            # Filter for RDP logons (Type 3 and 10) only
             if ($logonType -eq "3" -or $logonType -eq "10") {
                 $sourceIPData = $xml.Event.EventData.Data | Where-Object { $_.Name -eq 'IpAddress' }
                 $sourceIP = if ($sourceIPData) { $sourceIPData.'#text' } else { $null }
+                
+                # Skip local and empty IPs
+                if (-not $sourceIP -or $sourceIP -eq "-" -or $sourceIP -eq "127.0.0.1") {
+                    continue
+                }
                 
                 $userNameData = $xml.Event.EventData.Data | Where-Object { $_.Name -eq 'TargetUserName' }
                 $userName = if ($userNameData) { $userNameData.'#text' } else { "Unknown" }
@@ -103,38 +92,56 @@ function Get-RDPEvents {
                 $domainData = $xml.Event.EventData.Data | Where-Object { $_.Name -eq 'TargetDomainName' }
                 $domain = if ($domainData) { $domainData.'#text' } else { "" }
                 
-                $failureReasonData = $xml.Event.EventData.Data | Where-Object { $_.Name -eq 'Status' }
-                $failureReason = if ($failureReasonData) { $failureReasonData.'#text' } else { "" }
+                $eventType = if ($logEvent.Id -eq 4624) { "Success" } else { "Failed" }
                 
-                if ($sourceIP -and $sourceIP -ne "-" -and $sourceIP -ne "127.0.0.1") {
-                    $events += [PSCustomObject]@{
-                        TimeCreated = $logEvent.TimeCreated
-                        EventType = "Failed"
-                        SourceIP = $sourceIP
-                        UserName = $userName
-                        Domain = $domain
-                        LogonType = $logonType
-                        EventID = $logEvent.Id
-                        FailureReason = $failureReason
-                    }
+                $failureReason = ""
+                if ($eventType -eq "Failed") {
+                    $failureReasonData = $xml.Event.EventData.Data | Where-Object { $_.Name -eq 'Status' }
+                    $failureReason = if ($failureReasonData) { $failureReasonData.'#text' } else { "" }
                 }
+                
+                $events += [PSCustomObject]@{
+                    TimeCreated = $logEvent.TimeCreated
+                    EventType = $eventType
+                    SourceIP = $sourceIP
+                    UserName = $userName
+                    Domain = $domain
+                    LogonType = $logonType
+                    EventID = $logEvent.Id
+                    FailureReason = $failureReason
+                }
+                
+                $rdpCount++
             }
         }
+        
+        Write-Host "Found $rdpCount RDP events out of $processedCount total events" -ForegroundColor Green
+        
     } catch {
-        Write-Warning "Could not retrieve failed logon events: $($_.Exception.Message)"
+        Write-Warning "Could not retrieve logon events: $($_.Exception.Message)"
     }
     
     return $events | Sort-Object TimeCreated -Descending
 }
 
-# Function to get IP geolocation information
+# Function to get IP geolocation information with caching
+$script:GeoCache = @{}
+
 function Get-IPGeolocation {
-    param([string]$IPAddress)
+    param(
+        [string]$IPAddress,
+        [switch]$UseCache = $true
+    )
+    
+    # Check cache first
+    if ($UseCache -and $script:GeoCache.ContainsKey($IPAddress)) {
+        return $script:GeoCache[$IPAddress]
+    }
     
     try {
-        $response = Invoke-RestMethod -Uri "http://ip-api.com/json/$IPAddress" -TimeoutSec 10
+        $response = Invoke-RestMethod -Uri "http://ip-api.com/json/$IPAddress" -TimeoutSec 5
         if ($response.status -eq "success") {
-            return [PSCustomObject]@{
+            $geoInfo = [PSCustomObject]@{
                 Country = $response.country
                 Region = $response.regionName
                 City = $response.city
@@ -144,6 +151,13 @@ function Get-IPGeolocation {
                 Latitude = $response.lat
                 Longitude = $response.lon
             }
+            
+            # Cache the result
+            if ($UseCache) {
+                $script:GeoCache[$IPAddress] = $geoInfo
+            }
+            
+            return $geoInfo
         }
     } catch {
         # Silently fail for geolocation - it's not critical
@@ -154,7 +168,10 @@ function Get-IPGeolocation {
 
 # Function to analyze attack patterns
 function Get-AttackAnalysis {
-    param([array]$Events)
+    param(
+        [array]$Events,
+        [switch]$SkipGeoLocation = $false
+    )
     
     $analysis = @{
         TotalEvents = $Events.Count
@@ -168,16 +185,59 @@ function Get-AttackAnalysis {
         DailyDistribution = @{}
     }
     
-    # Top attacker IPs
+    # Top attacker IPs (simplified - no parallel processing due to job limitations)
     $ipCounts = $Events | Where-Object { $_.EventType -eq "Failed" } | Group-Object SourceIP | Sort-Object Count -Descending | Select-Object -First 10
-    foreach ($ip in $ipCounts) {
-        $geoInfo = Get-IPGeolocation -IPAddress $ip.Name
-        $analysis.TopAttackerIPs += [PSCustomObject]@{
-            IPAddress = $ip.Name
-            FailedAttempts = $ip.Count
-            Country = if ($geoInfo) { $geoInfo.Country } else { "Unknown" }
-            City = if ($geoInfo) { $geoInfo.City } else { "Unknown" }
-            ISP = if ($geoInfo) { $geoInfo.ISP } else { "Unknown" }
+    
+    if ($ipCounts.Count -gt 0 -and -not $SkipGeoLocation) {
+        Write-Host "Fetching geolocation data for top $($ipCounts.Count) attackers..." -ForegroundColor Gray
+        
+        $successCount = 0
+        foreach ($ip in $ipCounts) {
+            try {
+                $response = Invoke-RestMethod -Uri "http://ip-api.com/json/$($ip.Name)" -TimeoutSec 5 -ErrorAction Stop
+                if ($response.status -eq "success") {
+                    $analysis.TopAttackerIPs += [PSCustomObject]@{
+                        IPAddress = $ip.Name
+                        FailedAttempts = $ip.Count
+                        Country = $response.country
+                        City = $response.city
+                        ISP = $response.isp
+                    }
+                    $successCount++
+                } else {
+                    $analysis.TopAttackerIPs += [PSCustomObject]@{
+                        IPAddress = $ip.Name
+                        FailedAttempts = $ip.Count
+                        Country = "Unknown"
+                        City = "Unknown"
+                        ISP = "Unknown"
+                    }
+                }
+            } catch {
+                $analysis.TopAttackerIPs += [PSCustomObject]@{
+                    IPAddress = $ip.Name
+                    FailedAttempts = $ip.Count
+                    Country = "Unknown"
+                    City = "Unknown"
+                    ISP = "Unknown"
+                }
+            }
+            
+            # Small delay to respect API rate limits (45 requests per minute)
+            Start-Sleep -Milliseconds 200
+        }
+        
+        Write-Host "Retrieved geolocation for $successCount out of $($ipCounts.Count) IPs" -ForegroundColor Gray
+    } elseif ($ipCounts.Count -gt 0 -and $SkipGeoLocation) {
+        Write-Host "Skipping geolocation lookup (fast mode)..." -ForegroundColor Gray
+        foreach ($ip in $ipCounts) {
+            $analysis.TopAttackerIPs += [PSCustomObject]@{
+                IPAddress = $ip.Name
+                FailedAttempts = $ip.Count
+                Country = "N/A"
+                City = "N/A"
+                ISP = "N/A"
+            }
         }
     }
     
@@ -404,7 +464,7 @@ function New-HTMLReport {
 Write-Host "RDP Attack Monitor - Starting Analysis..." -ForegroundColor Cyan
 
 # Get RDP events
-$events = Get-RDPEvents -Days $DaysBack
+$events = Get-RDPEvents -Days $DaysBack -MaxEvents $MaxEvents
 
 if ($events.Count -eq 0) {
     Write-Host "No RDP events found in the specified time period." -ForegroundColor Yellow
@@ -412,7 +472,7 @@ if ($events.Count -eq 0) {
 }
 
 # Analyze events
-$analysis = Get-AttackAnalysis -Events $events
+$analysis = Get-AttackAnalysis -Events $events -SkipGeoLocation:$SkipGeoLocation
 
 # Show statistics if requested
 if ($ShowStats -or (!$GenerateReport -and !$ExportCSV)) {
